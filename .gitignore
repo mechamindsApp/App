@@ -1,0 +1,24 @@
+# Firebase servis hesabı dosyası ve diğer hassas dosyalar
+firebase_service_account.json
+.env
+*.env
+# Python
+__pycache__/
+*.pyc
+# Node.js
+node_modules/
+# React Native
+.expo/
+# IDE
+.vscode/
+.idea/
+# OS
+.DS_Store
+Thumbs.db
+# Log
+*.log
+# Test
+coverage/
+# Misc
+*.bak
+*.swp

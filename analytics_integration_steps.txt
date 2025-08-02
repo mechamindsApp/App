@@ -1,0 +1,39 @@
+React Native Firebase Analytics Entegrasyonu Adımları
+
+1. Gerekli paketleri yükle:
+   npm install @react-native-firebase/app @react-native-firebase/analytics
+   veya
+yarn add @react-native-firebase/app @react-native-firebase/analytics
+
+2. Android için:
+   - Firebase Console'dan Android uygulamanı ekle.
+   - google-services.json dosyasını indirip android/app/ klasörüne ekle.
+   - android/build.gradle ve android/app/build.gradle dosyalarında Firebase yönergelerini uygula (otomatik genellikle yeterli).
+
+3. iOS için (opsiyonel):
+   - Firebase Console'dan iOS uygulamanı ekle.
+   - GoogleService-Info.plist dosyasını indirip ios/ klasörüne ekle.
+   - Pod kurulumunu yap: cd ios && pod install
+
+4. Uygulama içinde event gönderimi örneği:
+
+import analytics from '@react-native-firebase/analytics';
+
+// Örnek event gönderimi
+await analytics().logEvent('photo_analyzed', {
+  user_id: 'kullanici_id',
+  photo_name: 'dosya_adi.jpg',
+  result: 'success',
+});
+
+// Feedback event örneği
+await analytics().logEvent('feedback_sent', {
+  user_id: 'kullanici_id',
+  feedback_length: 120,
+});
+
+5. Firebase Console > Analytics sekmesinden event'leri izleyebilirsin.
+
+Not: Event isimleri ve parametreleri ihtiyaca göre özelleştirilebilir. Daha fazla event için analytics().logEvent(...) fonksiyonunu kullanabilirsin.
+
+Devamında backend event loglaması için de örnek hazırlayacağım.

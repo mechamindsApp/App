@@ -1,105 +1,199 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Button, Text, Checkbox, ActivityIndicator, Snackbar, useTheme } from 'react-native-paper';
-import * as Google from 'expo-auth-session/providers/google';
-import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
-import { logLogin, logError } from '../services/errorTrackingService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  Dimensions,
+  SafeAreaView,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const LoginScreen = ({ navigation }) => {
-  const [privacyChecked, setPrivacyChecked] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    expoClientId: 'YOUR_EXPO_CLIENT_ID',
-    iosClientId: 'YOUR_IOS_CLIENT_ID',
-    androidClientId: 'YOUR_ANDROID_CLIENT_ID',
-    webClientId: 'YOUR_WEB_CLIENT_ID',
-  });
+const { width, height } = Dimensions.get('window');
 
-  const handleLogin = async () => {
-    setError(null);
-    if (!privacyChecked) {
-      setError('Lütfen gizlilik sözleşmesini kabul edin.');
-      return;
-    }
-    setLoading(true);
-    promptAsync();
+export default function LoginScreen({ navigation }) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    
+    // Mock authentication - replace with real Google OAuth later
+    setTimeout(() => {
+      setIsLoading(false);
+      navigation.replace('Tabs');
+    }, 1500);
   };
 
-  React.useEffect(() => {
-    const sendUserToBackend = async () => {
-      if (response?.type === 'success') {
-        try {
-          const userInfo = response.authentication?.id_token
-            ? JSON.parse(atob(response.authentication.id_token.split('.')[1]))
-            : {};
-          // userInfo: { sub, email, name, picture }
-          const res = await axios.post('http://127.0.0.1:8000/login/', {
-            google_id: userInfo.sub,
-            email: userInfo.email,
-            name: userInfo.name,
-          });
-          if (res.data.success && res.data.token) {
-            await AsyncStorage.setItem('userToken', res.data.token);
-            await AsyncStorage.setItem('userInfo', JSON.stringify(res.data.user));
-            await logLogin(res.data.user?.email || res.data.user?.id || 'unknown', 'google');
-            navigation.replace('Tabs');
-          } else {
-            setError('Backend oturum açma başarısız.');
-            await logError(res.data.user?.email || 'unknown', 'LoginScreen', 'Backend oturum açma başarısız.');
-          }
-        } catch (err) {
-          setError('Backend bağlantı hatası.');
-          await logError('unknown', 'LoginScreen', 'Backend bağlantı hatası.');
-        }
-      } else if (response?.type === 'error') {
-        setError('Google ile giriş başarısız.');
-        await logError('unknown', 'LoginScreen', 'Google ile giriş başarısız.');
-      }
-      setLoading(false);
-    };
-    sendUserToBackend();
-  }, [response]);
+  const inspirationImages = [
+    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200',
+    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=200',
+    'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=200',
+    'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=200',
+    'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=200',
+    'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=200',
+  ];
 
-  const theme = useTheme();
   return (
-    <View style={styles.container}>
-      <Ionicons name="person-circle-outline" size={64} color={theme.colors.primary} style={{ marginBottom: 16 }} />
-      <Text variant="headlineMedium" style={styles.title}>Hoşgeldiniz</Text>
-      <Text variant="bodyLarge" style={styles.subtitle}>AI Deneyim Uygulamasına giriş yapın</Text>
-      <View style={styles.privacyRow}>
-        <Checkbox
-          status={privacyChecked ? 'checked' : 'unchecked'}
-          onPress={() => setPrivacyChecked(!privacyChecked)}
-        />
-        <Text style={styles.privacyText}>Gizlilik sözleşmesini okudum ve kabul ediyorum.</Text>
-      </View>
-      <Snackbar
-        visible={!!error}
-        onDismiss={() => setError(null)}
-        duration={4000}
-        style={{ backgroundColor: theme.colors.error, marginBottom: 8 }}>
-        {error}
-      </Snackbar>
-      {loading ? (
-        <ActivityIndicator animating={true} size="large" style={{ marginVertical: 16 }} />
-      ) : (
-        <Button mode="contained" onPress={handleLogin} disabled={!request}>
-          Google ile Giriş Yap
-        </Button>
-      )}
-    </View>
+    <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={['#667eea', '#764ba2']}
+        style={styles.gradient}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>AI Experience</Text>
+          <Text style={styles.subtitle}>
+            Fotoğraflarınızı AI ile analiz edin ve keşfedin
+          </Text>
+        </View>
+
+        {/* Inspiration Grid */}
+        <ScrollView 
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.imageGrid}>
+            {inspirationImages.map((uri, index) => (
+              <View key={index} style={styles.imageCard}>
+                <Image 
+                  source={{ uri }} 
+                  style={styles.inspirationImage}
+                  resizeMode="cover"
+                />
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.7)']}
+                  style={styles.imageOverlay}
+                />
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+
+        {/* Login Section */}
+        <View style={styles.loginSection}>
+          <TouchableOpacity
+            style={styles.googleButton}
+            onPress={handleGoogleLogin}
+            disabled={isLoading}
+          >
+            <MaterialCommunityIcons 
+              name="google" 
+              size={24} 
+              color="#4285F4" 
+              style={styles.googleIcon}
+            />
+            <Text style={styles.googleButtonText}>
+              {isLoading ? 'Giriş yapılıyor...' : 'Google ile Devam Et'}
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={styles.disclaimer}>
+            Devam ederek Hizmet Şartlarımızı ve Gizlilik Politikamızı kabul etmiş olursunuz.
+          </Text>
+        </View>
+      </LinearGradient>
+    </SafeAreaView>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  title: { marginBottom: 8, textAlign: 'center' },
-  subtitle: { marginBottom: 24, textAlign: 'center' },
-  privacyRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
-  privacyText: { marginLeft: 8, fontSize: 14 },
+  container: {
+    flex: 1,
+  },
+  gradient: {
+    flex: 1,
+  },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 30,
+    paddingBottom: 30,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    opacity: 0.9,
+    lineHeight: 22,
+  },
+  scrollContainer: {
+    flex: 1,
+    paddingHorizontal: 15,
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingBottom: 20,
+  },
+  imageCard: {
+    width: (width - 40) / 2,
+    height: 200,
+    marginBottom: 10,
+    borderRadius: 15,
+    overflow: 'hidden',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  inspirationImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+  },
+  loginSection: {
+    paddingHorizontal: 30,
+    paddingVertical: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+  },
+  googleButton: {
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    marginBottom: 20,
+  },
+  googleIcon: {
+    marginRight: 12,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  disclaimer: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    opacity: 0.8,
+    lineHeight: 16,
+  },
 });
-
-export default LoginScreen;

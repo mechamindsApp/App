@@ -15,7 +15,7 @@ def get_current_user(authorization: str = Header(None)):
     return payload
 from fastapi import HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from .auth_utils import create_access_token, verify_token
+from api.auth_utils import create_access_token, verify_token
 import os
 import firebase_admin
 from firebase_admin import credentials, storage, firestore

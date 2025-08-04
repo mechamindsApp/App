@@ -1,18 +1,19 @@
-// Firebase Analytics event tracking için servis
-import analytics from '@react-native-firebase/analytics';
+// Basit Analytics event tracking servisi (Firebase olmadan)
 
 export async function logPhotoAnalyzed(userId, photoName, result) {
-  await analytics().logEvent('photo_analyzed', {
+  console.log('Analytics: Photo Analyzed', {
     user_id: userId,
     photo_name: photoName,
     result: result,
+    timestamp: new Date().toISOString()
   });
 }
 
 export async function logFeedbackSent(userId, feedbackLength) {
-  await analytics().logEvent('feedback_sent', {
+  console.log('Analytics: Feedback Sent', {
     user_id: userId,
     feedback_length: feedbackLength,
+    timestamp: new Date().toISOString()
   });
 }
 

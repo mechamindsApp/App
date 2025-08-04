@@ -1,19 +1,19 @@
-// Firebase Analytics ile hata ve login eventlerini loglamak için servis
-import analytics from '@react-native-firebase/analytics';
+// Basit Error Tracking servisi (Firebase olmadan)
 
 export async function logLogin(userId, method = 'email') {
-  await analytics().logEvent('user_login', {
+  console.log('Analytics: User Login', {
     user_id: userId,
     method,
+    timestamp: new Date().toISOString()
   });
 }
 
 export async function logError(userId, screen, errorMessage) {
-  await analytics().logEvent('app_error', {
+  console.error('Error Tracking:', {
     user_id: userId || 'anonymous',
     screen,
     error_message: errorMessage,
-    timestamp: Date.now(),
+    timestamp: new Date().toISOString()
   });
 }
 

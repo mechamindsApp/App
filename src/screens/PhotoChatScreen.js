@@ -1,15 +1,18 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView, Alert, SafeAreaView, Dimensions, TouchableOpacity } from 'react-native';
 import { Button, TextInput, Modal, ActivityIndicator, Card, Snackbar, useTheme } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemeContext } from '../context/ThemeContext';
 import { lightTheme, darkTheme } from '../theme/theme';
 import VoiceInputBar from '../components/VoiceInputBar';
 import { analyzePhoto, sendFeedback } from '../services/apiService';
 import { logPhotoAnalyzed, logFeedbackSent } from '../services/analyticsService';
 import { logError } from '../services/errorTrackingService';
-import { logPhotoAnalyzed, logFeedbackSent } from '../services/analyticsService';
 import { startRecording, stopRecording } from '../services/audioService';
 import { getUserData, logout } from '../utils/auth';
+
+const { width, height } = Dimensions.get('window');
 
 const PhotoChatScreen = ({ route, navigation }) => {
   const { photoUri } = route.params || {};
@@ -56,7 +59,10 @@ const PhotoChatScreen = ({ route, navigation }) => {
             if (userId) await logError(userId, 'PhotoChatScreen', result.error);
           } else if (result && result.experience) {
             setMessages([{ id: Date.now(), text: result.experience }]);
-            setShowFeedback(true); // AI yanıtı geldiyse feedback modalını aç
+            // Feedback modalını 3 saniye sonra aç
+            setTimeout(() => {
+              setShowFeedback(true);
+            }, 3000);
             if (userId) await logPhotoAnalyzed(userId, 'photo.jpg', 'success');
           } else {
             setMessages([]);
@@ -138,74 +144,354 @@ const PhotoChatScreen = ({ route, navigation }) => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}> 
-      {photoUri && (
-        <Card style={styles.photoCard}>
-          <Image source={{ uri: photoUri }} style={styles.photo} />
-        </Card>
-      )}
-      {loading ? (
-        <ActivityIndicator animating={true} size="large" style={{ marginTop: 32 }} />
-      ) : error ? (
-        <Snackbar
-          visible={!!error}
-          onDismiss={() => setError(null)}
-          duration={4000}
-          style={{ backgroundColor: theme.colors.error, margin: 16 }}>
-          {error}
-        </Snackbar>
-      ) : (
-        <ScrollView style={styles.chatContainer}>
-          {messages.map(msg => (
-            <Card key={msg.id} style={styles.bubble}>
-              <Card.Content>
-                <Text style={{ color: theme.colors.onSurface }}>{msg.text}</Text>
-              </Card.Content>
-            </Card>
-          ))}
-        </ScrollView>
-      )}
-      <Modal visible={showFeedback} onDismiss={() => setShowFeedback(false)} contentContainerStyle={styles.modalContent}>
-        <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 8 }}>AI yanıtı nasıldı?</Text>
-        <TextInput
-          mode="outlined"
-          label="Yorumunuzu yazın..."
-          value={feedbackText}
-          onChangeText={setFeedbackText}
-          multiline
-          style={styles.input}
-        />
-        <Button mode="contained" onPress={handleSendFeedback} style={styles.sendBtn}>
-          Gönder
-        </Button>
-        <Button onPress={() => setShowFeedback(false)} style={styles.closeBtn}>
-          Kapat
-        </Button>
-      </Modal>
-      <VoiceInputBar value={input} onChangeText={setInput} onVoicePress={handleVoicePress} />
-      {isRecording && (
-        <Text style={{ color: theme.colors.primary, textAlign: 'center', marginBottom: 8 }}>Kaydediliyor...</Text>
-      )}
-      <Button mode="contained" onPress={handleSendMessage} style={{ marginVertical: 8 }}>
-        Mesajı Gönder
-      </Button>
-      <Button mode="outlined" onPress={() => navigation.navigate('Home')}>
-        Başka fotoğraf çek
-      </Button>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={['#667eea', '#764ba2']}
+        style={styles.gradient}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>AI Analiz</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        {/* Photo Display - Much Larger */}
+        {photoUri && (
+          <View style={styles.photoSection}>
+            <View style={styles.photoContainer}>
+              <Image source={{ uri: photoUri }} style={styles.photo} />
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.3)']}
+                style={styles.photoOverlay}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Content Area */}
+        <View style={styles.contentArea}>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator animating={true} size="large" color="white" />
+              <Text style={styles.loadingText}>AI analiz ediyor...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <MaterialCommunityIcons name="alert-circle" size={48} color="#FF6B6B" />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity 
+                style={styles.retryButton}
+                onPress={() => navigation.goBack()}
+              >
+                <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <ScrollView style={styles.chatContainer} showsVerticalScrollIndicator={false}>
+              {messages.map(msg => (
+                <View key={msg.id} style={styles.messageContainer}>
+                  <View style={styles.messageBubble}>
+                    <MaterialCommunityIcons name="robot" size={24} color="#667eea" style={styles.aiIcon} />
+                    <Text style={styles.messageText}>{msg.text}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => navigation.navigate('Home')}
+            >
+              <LinearGradient
+                colors={['#FF6B6B', '#FF8E8E']}
+                style={styles.actionButtonGradient}
+              >
+                <MaterialCommunityIcons name="camera" size={20} color="white" />
+                <Text style={styles.actionButtonText}>Yeni Fotoğraf</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Feedback Modal */}
+        <Modal visible={showFeedback} onDismiss={() => setShowFeedback(false)} contentContainerStyle={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <MaterialCommunityIcons name="star" size={32} color="#FFD700" />
+            <Text style={styles.modalTitle}>AI yanıtı nasıldı?</Text>
+          </View>
+          <TextInput
+            mode="outlined"
+            label="Yorumunuzu yazın..."
+            value={feedbackText}
+            onChangeText={setFeedbackText}
+            multiline
+            style={styles.feedbackInput}
+            theme={{
+              colors: {
+                primary: '#667eea',
+              }
+            }}
+          />
+          <View style={styles.modalButtons}>
+            <TouchableOpacity style={styles.modalButton} onPress={handleSendFeedback}>
+              <LinearGradient
+                colors={['#4ECDC4', '#6BCBD1']}
+                style={styles.modalButtonGradient}
+              >
+                <Text style={styles.modalButtonText}>Gönder</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.modalButton, styles.modalCancelButton]} 
+              onPress={() => setShowFeedback(false)}
+            >
+              <Text style={styles.modalCancelText}>Kapat</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+
+        {/* Error Snackbar */}
+        {error && (
+          <View style={styles.snackbarContainer}>
+            <View style={styles.snackbar}>
+              <MaterialCommunityIcons name="alert" size={20} color="white" />
+              <Text style={styles.snackbarText}>{error}</Text>
+            </View>
+          </View>
+        )}
+      </LinearGradient>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
-  photoCard: { width: '100%', borderRadius: 12, marginBottom: 16, overflow: 'hidden' },
-  photo: { width: '100%', height: 200 },
-  chatContainer: { flex: 1 },
-  bubble: { marginBottom: 8 },
-  modalContent: { backgroundColor: 'white', padding: 20, borderRadius: 16, alignItems: 'center', margin: 32 },
-  input: { width: 260, minHeight: 60, marginBottom: 12 },
-  sendBtn: { width: 260, marginBottom: 8 },
-  closeBtn: { width: 260 },
+  container: {
+    flex: 1,
+  },
+  gradient: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 15,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  headerTitle: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  placeholder: {
+    width: 40,
+  },
+  photoSection: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  photoContainer: {
+    position: 'relative',
+    borderRadius: 20,
+    overflow: 'hidden',
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+  },
+  photo: {
+    width: '100%',
+    height: height * 0.4, // 40% of screen height - much larger
+    resizeMode: 'cover',
+  },
+  photoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
+  contentArea: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingTop: 25,
+    paddingHorizontal: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#667eea',
+    fontSize: 16,
+    marginTop: 15,
+    fontWeight: '500',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  errorText: {
+    color: '#FF6B6B',
+    fontSize: 16,
+    textAlign: 'center',
+    marginVertical: 15,
+    lineHeight: 24,
+  },
+  retryButton: {
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginTop: 10,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  chatContainer: {
+    flex: 1,
+    paddingBottom: 20,
+  },
+  messageContainer: {
+    marginBottom: 15,
+  },
+  messageBubble: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 15,
+    padding: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#667eea',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  aiIcon: {
+    marginBottom: 10,
+  },
+  messageText: {
+    color: '#333',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  actionButtons: {
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  actionButton: {
+    borderRadius: 25,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+  actionButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 25,
+    gap: 10,
+  },
+  actionButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 25,
+    margin: 30,
+    elevation: 10,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 10,
+  },
+  feedbackInput: {
+    backgroundColor: 'white',
+    marginBottom: 20,
+    minHeight: 80,
+  },
+  modalButtons: {
+    gap: 10,
+  },
+  modalButton: {
+    borderRadius: 25,
+  },
+  modalButtonGradient: {
+    paddingVertical: 15,
+    borderRadius: 25,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalCancelButton: {
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 15,
+    borderRadius: 25,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: '#666',
+    fontWeight: '500',
+    fontSize: 16,
+  },
+  snackbarContainer: {
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    right: 20,
+  },
+  snackbar: {
+    backgroundColor: '#FF6B6B',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderRadius: 25,
+    gap: 10,
+  },
+  snackbarText: {
+    color: 'white',
+    fontSize: 14,
+    flex: 1,
+  },
 });
 
 export default PhotoChatScreen;

@@ -3,7 +3,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import env from '../config/env.example.json';
+import Constants from 'expo-constants';
 
 const mockAnalyses = {
   // Doğa fotoğrafları
@@ -115,12 +115,17 @@ const detectPhotoCategory = (photoUri) => {
 
 // Ana AI analiz fonksiyonu
 export const analyzePhoto = async (photoUri) => {
+  const extra = Constants?.expoConfig?.extra || Constants?.manifest?.extra || {};
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+  const base = extra.apiBaseUrl || (isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000');
+  const useMock = typeof extra.useMockAi === 'boolean' ? extra.useMockAi : true;
+
   try {
     // Eğer backend aktifse, gerçek API'ye gönder
-    if (!env.USE_MOCK_AI && env.API_BASE_URL) {
+    if (!useMock && base) {
       const data = new FormData();
       data.append('file', { uri: photoUri, name: 'photo.jpg', type: 'image/jpeg' });
-      const res = await axios.post(`${env.API_BASE_URL}/analyze-photo/`, data, {
+      const res = await axios.post(`${base}/analyze-photo/`, data, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 20000,
       });
@@ -133,7 +138,7 @@ export const analyzePhoto = async (photoUri) => {
       };
     }
   } catch (error) {
-    console.warn('Backend analyze failed, falling back to mock:', error?.message);
+    console.warn('Backend analyze failed, fallback to mock:', error?.message);
   }
 
   // --- MOCK FALLBACK ---

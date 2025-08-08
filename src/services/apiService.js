@@ -1,6 +1,7 @@
 // Mock AI Service - Gerçek backend olmadığında kullanılır
 // Bu service fotoğrafları analiz ederek deneyimsel yorumlar üretir
 
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import Constants from 'expo-constants';
@@ -116,8 +117,7 @@ const detectPhotoCategory = (photoUri) => {
 // Ana AI analiz fonksiyonu
 export const analyzePhoto = async (photoUri) => {
   const extra = Constants?.expoConfig?.extra || Constants?.manifest?.extra || {};
-  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
-  const base = extra.apiBaseUrl || (isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000');
+  const base = extra.apiBaseUrl || (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000');
   const useMock = typeof extra.useMockAi === 'boolean' ? extra.useMockAi : true;
 
   try {

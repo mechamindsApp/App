@@ -4,7 +4,8 @@ import {
   StyleSheet, 
   ScrollView, 
   Dimensions, 
-  TouchableOpacity 
+  TouchableOpacity, 
+  Image 
 } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -66,6 +67,9 @@ const DiscoverScreen = () => {
             <TouchableOpacity key={item.id || idx} style={styles.discoveryCard} onPress={() => handleOpenItem(item)}>
               <View style={styles.cardContent}>
                 <View style={styles.imageContainer}>
+                  {item.image ? (
+                    <Image source={{ uri: item.image }} style={styles.imageThumb} resizeMode="cover" />
+                  ) : null}
                   <LinearGradient colors={['transparent', 'rgba(0,0,0,0.7)']} style={styles.imageOverlay} />
                 </View>
                 
@@ -172,7 +176,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     marginBottom: 10,
     position: 'relative',
+    overflow: 'hidden',
   },
+  imageThumb: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   imageOverlay: {
     position: 'absolute',
     bottom: 0,

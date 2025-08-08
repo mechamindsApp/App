@@ -228,38 +228,39 @@ export const getUserAnalytics = async () => {
 
 // Popüler analizleri getirme mock fonksiyonu (Discover screen için)
 export const getPopularAnalyses = async () => {
+  const extra = Constants?.expoConfig?.extra || Constants?.manifest?.extra || {};
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+  const base = extra.apiBaseUrl || (isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000');
+  const useMock = typeof extra.useMockAi === 'boolean' ? extra.useMockAi : true;
+
   try {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const mockPopular = [
-      {
-        id: 1,
-        user: 'Ahmet K.',
-        category: 'nature',
-        preview: 'Bu manzara sabah saatlerinde çok daha güzel...',
-        likes: 24,
-        image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200'
-      },
-      {
-        id: 2,
-        user: 'Elif S.',
-        category: 'food',
-        preview: 'Bu restoran çok kalabalık, rezervasyon yapmadan...',
-        likes: 18,
-        image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200'
-      }
-    ];
-    
-    return {
-      success: true,
-      analyses: mockPopular
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: 'Popüler analizler yüklenemedi'
-    };
+    if (!useMock && base) {
+      const res = await axios.get(`${base}/discover`, { timeout: 15000 });
+      return { success: true, analyses: res.data?.analyses || [] };
+    }
+  } catch (e) {
+    console.warn('discover fetch failed, using mock', e?.message);
   }
+  // fallback to previous mockPopular
+  const mockPopular = [
+    {
+      id: 1,
+      user: 'Ahmet K.',
+      category: 'nature',
+      preview: 'Bu manzara sabah saatlerinde çok daha güzel...',
+      likes: 24,
+      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200'
+    },
+    {
+      id: 2,
+      user: 'Elif S.',
+      category: 'food',
+      preview: 'Bu restoran çok kalabalık, rezervasyon yapmadan...',
+      likes: 18,
+      image: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=200'
+    }
+  ];
+  return { success: true, analyses: mockPopular };
 };
 
 // Export default

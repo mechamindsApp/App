@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   StyleSheet, 
@@ -10,47 +10,20 @@ import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getPopularAnalyses } from '../services/apiService';
 
 const { width } = Dimensions.get('window');
 
 const DiscoverScreen = () => {
   const insets = useSafeAreaInsets();
+  const [items, setItems] = useState([]);
 
-  // Mock data for other users' analyses
-  const discoveries = [
-    {
-      id: 1,
-      user: 'Ahmet K.',
-      image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200',
-      analysis: 'Bu manzara sabah saatlerinde çok daha güzel görünüyor...',
-      category: 'Doğa',
-      likes: 24,
-    },
-    {
-      id: 2,
-      user: 'Elif S.',
-      image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=200',
-      analysis: 'Bu restoran çok kalabalık, rezervasyon yapmadan gitmeyin...',
-      category: 'Restoran',
-      likes: 18,
-    },
-    {
-      id: 3,
-      user: 'Mehmet Y.',
-      image: 'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=200',
-      analysis: 'Burası fotoğraf çekmek için mükemmel bir yer...',
-      category: 'Mimari',
-      likes: 31,
-    },
-    {
-      id: 4,
-      user: 'Zehra A.',
-      image: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=200',
-      analysis: 'Bu araba şehir içi için çok uygun, park etmesi kolay...',
-      category: 'Otomobil',
-      likes: 12,
-    },
-  ];
+  useEffect(() => {
+    (async () => {
+      const res = await getPopularAnalyses();
+      if (res?.analyses) setItems(res.analyses);
+    })();
+  }, []);
 
   const categories = ['Tümü', 'Doğa', 'Restoran', 'Mimari', 'Otomobil', 'UX/UI'];
 
@@ -89,14 +62,11 @@ const DiscoverScreen = () => {
 
         {/* Discoveries Feed */}
         <ScrollView style={styles.feedContainer} showsVerticalScrollIndicator={false}>
-          {discoveries.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.discoveryCard} onPress={() => handleOpenItem(item)}>
+          {items.map((item, idx) => (
+            <TouchableOpacity key={item.id || idx} style={styles.discoveryCard} onPress={() => handleOpenItem(item)}>
               <View style={styles.cardContent}>
                 <View style={styles.imageContainer}>
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.7)']}
-                    style={styles.imageOverlay}
-                  />
+                  <LinearGradient colors={['transparent', 'rgba(0,0,0,0.7)']} style={styles.imageOverlay} />
                 </View>
                 
                 <View style={styles.cardInfo}>
@@ -106,14 +76,14 @@ const DiscoverScreen = () => {
                       size={20} 
                       color="white" 
                     />
-                    <Text style={styles.userName}>{item.user}</Text>
+                    <Text style={styles.userName}>{item.user || 'Kullanıcı'}</Text>
                     <View style={styles.categoryBadge}>
-                      <Text style={styles.categoryBadgeText}>{item.category}</Text>
+                      <Text style={styles.categoryBadgeText}>{item.category || 'Genel'}</Text>
                     </View>
                   </View>
                   
                   <Text style={styles.analysisText} numberOfLines={2}>
-                    {item.analysis}
+                    {item.experience || item.preview}
                   </Text>
                   
                   <View style={styles.cardFooter}>
@@ -123,7 +93,7 @@ const DiscoverScreen = () => {
                         size={16} 
                         color="white" 
                       />
-                      <Text style={styles.likeCount}>{item.likes}</Text>
+                      <Text style={styles.likeCount}>{item.likes || 0}</Text>
                     </TouchableOpacity>
                     
                     <TouchableOpacity style={styles.shareButton}>

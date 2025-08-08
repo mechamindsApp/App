@@ -1,5 +1,4 @@
-import * as Audio from 'expo-av';
-
+import { Audio } from 'expo-av';
 import { Alert } from 'react-native';
 
 export async function startRecording() {

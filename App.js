@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import HomeScreen from './src/screens/HomeScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
@@ -72,15 +73,17 @@ function MainTabs({ navigation }) {
 export default function App() {
   return (
     <ThemeProvider>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Splash" component={SplashScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Tabs" component={MainTabs} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-          <Stack.Screen name="PhotoChat" component={PhotoChatScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Splash" component={SplashScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Tabs" component={MainTabs} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="PhotoChat" component={PhotoChatScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </SafeAreaProvider>
     </ThemeProvider>
   );
 }

@@ -34,7 +34,7 @@ export async function pickImage() {
   }
 
   const result = await ImagePicker.launchImageLibraryAsync({ 
-    mediaTypes: ImagePicker.MediaType.Images, 
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
     quality: 1,
     allowsEditing: false, // Kırpma ekranını kaldır
   });

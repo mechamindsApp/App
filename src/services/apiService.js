@@ -1,6 +1,8 @@
 // Mock AI Service - Gerçek backend olmadığında kullanılır
 // Bu service fotoğrafları analiz ederek deneyimsel yorumlar üretir
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 const mockAnalyses = {
   // Doğa fotoğrafları
   nature: [
@@ -169,10 +171,10 @@ export const sendFeedback = async (feedbackText) => {
       id: Date.now()
     };
     
-    // Local storage'dan önceki feedback'leri al
-    const existingFeedbacks = JSON.parse(localStorage.getItem('userFeedbacks') || '[]');
+    const raw = (await AsyncStorage.getItem('userFeedbacks')) || '[]';
+    const existingFeedbacks = JSON.parse(raw);
     existingFeedbacks.push(feedback);
-    localStorage.setItem('userFeedbacks', JSON.stringify(existingFeedbacks));
+    await AsyncStorage.setItem('userFeedbacks', JSON.stringify(existingFeedbacks));
     
     return {
       success: true,

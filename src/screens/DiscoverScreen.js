@@ -9,10 +9,13 @@ import {
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
 const DiscoverScreen = () => {
+  const insets = useSafeAreaInsets();
+
   // Mock data for other users' analyses
   const discoveries = [
     {
@@ -62,7 +65,7 @@ const DiscoverScreen = () => {
         style={styles.gradient}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + 100 }] }>
           <Text variant="headlineSmall" style={styles.title}>
             Keşfet
           </Text>

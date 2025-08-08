@@ -51,6 +51,10 @@ const DiscoverScreen = () => {
 
   const categories = ['Tümü', 'Doğa', 'Restoran', 'Mimari', 'Otomobil', 'UX/UI'];
 
+  const handleOpenItem = (item) => {
+    // Gelecekte detay ekranına gidebilir
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
@@ -83,7 +87,7 @@ const DiscoverScreen = () => {
         {/* Discoveries Feed */}
         <ScrollView style={styles.feedContainer} showsVerticalScrollIndicator={false}>
           {discoveries.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.discoveryCard}>
+            <TouchableOpacity key={item.id} style={styles.discoveryCard} onPress={() => handleOpenItem(item)}>
               <View style={styles.cardContent}>
                 <View style={styles.imageContainer}>
                   <LinearGradient

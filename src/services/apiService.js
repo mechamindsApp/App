@@ -2,6 +2,8 @@
 // Bu service fotoğrafları analiz ederek deneyimsel yorumlar üretir
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import env from '../config/env.example.json';
 
 const mockAnalyses = {
   // Doğa fotoğrafları
@@ -114,48 +116,56 @@ const detectPhotoCategory = (photoUri) => {
 // Ana AI analiz fonksiyonu
 export const analyzePhoto = async (photoUri) => {
   try {
-    // Loading simülasyonu
-    await new Promise(resolve => setTimeout(resolve, 2000 + Math.random() * 2000));
-    
-    // %5 hata simülasyonu (gerçek hayatta olabilir)
-    if (Math.random() < 0.05) {
-      throw new Error('AI servisi geçici olarak kullanılamıyor');
+    // Eğer backend aktifse, gerçek API'ye gönder
+    if (!env.USE_MOCK_AI && env.API_BASE_URL) {
+      const data = new FormData();
+      data.append('file', { uri: photoUri, name: 'photo.jpg', type: 'image/jpeg' });
+      const res = await axios.post(`${env.API_BASE_URL}/analyze-photo/`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 20000,
+      });
+      return {
+        success: true,
+        experience: res.data?.experience || 'Deneyimsel yorum alınamadı',
+        category: 'general',
+        confidence: 0.9,
+        timestamp: new Date().toISOString()
+      };
     }
-    
-    // Fotoğraf kategorisini tespit et
-    const category = detectPhotoCategory(photoUri);
-    
-    // İlgili kategoriden rastgele analiz seç
-    const analyses = mockAnalyses[category] || mockAnalyses.general;
-    const selectedAnalysis = analyses[Math.floor(Math.random() * analyses.length)];
-    
-    // Deneyimsel öneriler ekle
-    const additionalTips = [
-      "\n\n💡 İpucu: Bu tür fotoğrafları paylaşırken hikayesini de anlatmayı unutmayın!",
-      "\n\n🎯 Öneri: Benzer deneyimler için #AIExperience hashtag'ini kullanabilirsiniz.",
-      "\n\n⭐ Not: Bu analiz topluluğumuzun deneyimlerine dayanmaktadır.",
-      "\n\n🔍 Keşfet: Bu konuda daha fazla içerik için Keşfet sekmesini ziyaret edin!",
-      "\n\n📱 Paylaş: Bu analizi beğendiyseniz arkadaşlarınızla paylaşabilirsiniz."
-    ];
-    
-    const randomTip = additionalTips[Math.floor(Math.random() * additionalTips.length)];
-    
-    return {
-      success: true,
-      experience: selectedAnalysis + randomTip,
-      category: category,
-      confidence: 0.85 + Math.random() * 0.1, // %85-95 arası güven skoru
-      timestamp: new Date().toISOString()
-    };
-    
   } catch (error) {
-    console.error('AI Analysis Error:', error);
-    return {
-      success: false,
-      error: 'Analiz sırasında bir hata oluştu. Lütfen tekrar deneyin.',
-      details: error.message
-    };
+    console.warn('Backend analyze failed, falling back to mock:', error?.message);
   }
+
+  // --- MOCK FALLBACK ---
+  // Loading simülasyonu (daha hızlı ve stabil)
+  await new Promise(resolve => setTimeout(resolve, 1200));
+
+  // Fotoğraf kategorisini tespit et
+  const category = detectPhotoCategory(photoUri);
+
+  // İlgili kategoriden rastgele analiz seç
+  const analyses = mockAnalyses[category] || mockAnalyses.general;
+  const selectedAnalysis = analyses[Math.floor(Math.random() * analyses.length)];
+
+  // Deneyimsel öneriler ekle
+  const additionalTips = [
+    "\n\n💡 İpucu: Bu tür fotoğrafları paylaşırken hikayesini de anlatmayı unutmayın!",
+    "\n\n🎯 Öneri: Benzer deneyimler için #AIExperience hashtag'ini kullanabilirsiniz.",
+    "\n\n⭐ Not: Bu analiz topluluğumuzun deneyimlerine dayanmaktadır.",
+    "\n\n🔍 Keşfet: Bu konuda daha fazla içerik için Keşfet sekmesini ziyaret edin!",
+    "\n\n📱 Paylaş: Bu analizi beğendiyseniz arkadaşlarınızla paylaşabilirsiniz."
+  ];
+
+  const randomTip = additionalTips[Math.floor(Math.random() * additionalTips.length)];
+
+  return {
+    success: true,
+    experience: selectedAnalysis + randomTip,
+    category,
+    confidence: 0.9, // sabit güven skoru (MVP)
+    timestamp: new Date().toISOString()
+  };
+
 };
 
 // Feedback gönderme mock fonksiyonu

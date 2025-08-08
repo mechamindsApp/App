@@ -14,6 +14,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import SplashScreen from './src/screens/SplashScreen';
 import AppHeader from './src/components/AppHeader';
 import { ThemeProvider } from './src/context/ThemeContext';
+import PhotoPreviewScreen from './src/screens/PhotoPreviewScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -24,46 +25,18 @@ function MainTabs({ navigation }) {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
-            let iconName;
-
-            if (route.name === 'Home') {
-              iconName = focused ? 'home' : 'home-outline';
-            } else if (route.name === 'Profile') {
-              iconName = focused ? 'account' : 'account-outline';
-            } else if (route.name === 'Discover') {
-              iconName = focused ? 'compass' : 'compass-outline';
-            }
-
-            return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+            const map = { Home: focused ? 'home' : 'home-outline', Profile: focused ? 'account' : 'account-outline', Discover: focused ? 'compass' : 'compass-outline' };
+            return <MaterialCommunityIcons name={map[route.name]} size={size} color={color} />;
           },
           tabBarActiveTintColor: '#667eea',
           tabBarInactiveTintColor: 'gray',
-          tabBarStyle: {
-            backgroundColor: 'white',
-            borderTopWidth: 1,
-            borderTopColor: '#e0e0e0',
-            paddingBottom: 25,
-            paddingTop: 12,
-            height: 85,
-          },
+          tabBarStyle: { backgroundColor: 'white', borderTopWidth: 1, borderTopColor: '#e0e0e0', paddingBottom: 25, paddingTop: 12, height: 85 },
           headerShown: false,
         })}
       >
-        <Tab.Screen 
-          name="Home" 
-          component={HomeScreen} 
-          options={{ tabBarLabel: 'Ana Sayfa' }}
-        />
-        <Tab.Screen 
-          name="Profile" 
-          component={ProfileScreen} 
-          options={{ tabBarLabel: 'Profil' }}
-        />
-        <Tab.Screen 
-          name="Discover" 
-          component={DiscoverScreen} 
-          options={{ tabBarLabel: 'Keşfet' }}
-        />
+        <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Ana Sayfa' }} />
+        <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Profil' }} />
+        <Tab.Screen name="Discover" component={DiscoverScreen} options={{ tabBarLabel: 'Keşfet' }} />
       </Tab.Navigator>
       <AppHeader navigation={navigation} />
     </View>
@@ -80,6 +53,7 @@ export default function App() {
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Tabs" component={MainTabs} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="PhotoPreview" component={PhotoPreviewScreen} />
             <Stack.Screen name="PhotoChat" component={PhotoChatScreen} />
           </Stack.Navigator>
         </NavigationContainer>

@@ -14,10 +14,11 @@ const AppHeader = ({ navigation }) => {
 
   return (
     <View style={[styles.headerContainer, { paddingTop: topPad }] }>
-      <View style={styles.header}>
-        <View style={styles.logoContainer}>
-          <MaterialCommunityIcons name="camera-iris" size={32} color="white" />
-          <Text variant="titleMedium" style={styles.logoText}>AI Experience</Text>
+      <View style={styles.row}>
+        <View style={styles.sideSpacer} />
+        <View style={styles.centerBrand}>
+          {/* Logo placeholder (user will replace later) */}
+          <View style={styles.logoPlaceholder} />
         </View>
         <TouchableOpacity style={styles.settingsButton} onPress={handleSettingsPress}>
           <MaterialCommunityIcons name="cog" size={24} color="white" />
@@ -37,10 +38,12 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     paddingHorizontal: 20,
   },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  logoContainer: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sideSpacer: { width: 40, height: 40 },
+  centerBrand: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
+  logoPlaceholder: { width: 40, height: 40, borderRadius: 20, borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)', backgroundColor: 'transparent' },
+  settingsButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)' },
   logoText: { color: 'white', fontWeight: 'bold' },
-  settingsButton: { padding: 8, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.1)' },
 });
 
 export default AppHeader;

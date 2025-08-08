@@ -14,7 +14,7 @@ const HomeScreen = ({ navigation }) => {
   const handleTakePhoto = async () => {
     const uri = await takePhoto();
     if (uri) {
-      navigation.navigate('PhotoChat', { photoUri: uri });
+      navigation.navigate('PhotoPreview', { photoUri: uri });
     } else {
       Alert.alert('Kamera erişimi reddedildi veya işlem iptal edildi.');
     }
@@ -23,7 +23,7 @@ const HomeScreen = ({ navigation }) => {
   const handlePickImage = async () => {
     const uri = await pickImage();
     if (uri) {
-      navigation.navigate('PhotoChat', { photoUri: uri });
+      navigation.navigate('PhotoPreview', { photoUri: uri });
     } else {
       Alert.alert('Galeri erişimi reddedildi veya işlem iptal edildi.');
     }

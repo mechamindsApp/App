@@ -31,6 +31,7 @@ const PhotoChatScreen = ({ route, navigation }) => {
   const [analysisId, setAnalysisId] = useState(null);
   const [editedObjects, setEditedObjects] = useState('');
   const [correctionMode, setCorrectionMode] = useState(false);
+  const [skeleton, setSkeleton] = useState(true);
   const { darkMode } = useContext(ThemeContext);
   const theme = useTheme();
 
@@ -39,6 +40,7 @@ const PhotoChatScreen = ({ route, navigation }) => {
       if (photoUri) {
         setLoading(true);
         setError(null);
+        setSkeleton(true);
         try {
           const result = await analyzePhoto(photoUri);
           let userId = null;
@@ -56,11 +58,13 @@ const PhotoChatScreen = ({ route, navigation }) => {
               setMessages([]);
               setError('Bu tür fotoğrafları inceleyemiyoruz. Lütfen başka bir fotoğraf seçin.');
               setLoading(false);
+              setTimeout(()=>setSkeleton(false),400);
               if (userId) await logPhotoAnalyzed(userId, 'photo.jpg', 'nsfw');
               return;
             }
             setMessages([]);
             setError(result.error);
+            setTimeout(()=>setSkeleton(false),400);
             if (userId) await logPhotoAnalyzed(userId, 'photo.jpg', 'error');
             if (userId) await logError(userId, 'PhotoChatScreen', result.error);
           } else if (result && result.experience) {
@@ -75,12 +79,14 @@ const PhotoChatScreen = ({ route, navigation }) => {
           } else {
             setMessages([]);
             setError('AI yanıtı alınamadı.');
+            setTimeout(()=>setSkeleton(false),400);
             if (userId) await logPhotoAnalyzed(userId, 'photo.jpg', 'no_experience');
             if (userId) await logError(userId, 'PhotoChatScreen', 'AI yanıtı alınamadı.');
           }
         } catch (err) {
           setMessages([]);
           setError('Sunucuya bağlanılamadı.');
+          setTimeout(()=>setSkeleton(false),400);
           try {
             const userData = await getUserData();
             const userId = userData?.user?.email || userData?.user?.id || null;
@@ -202,15 +208,48 @@ const PhotoChatScreen = ({ route, navigation }) => {
         {/* Content Area */}
         <View style={styles.contentArea}>
           {showPerception && perception && (
-            <View style={styles.perceptionBox}>
-              <Text style={styles.perceptionTitle}>Algılanan</Text>
-              <Text style={styles.perceptionText}>{JSON.stringify(perception, null, 2)}</Text>
+            <View style={styles.perceptionChipPanel}>
+              <View style={styles.perceptionHeaderRow}>
+                <Text style={styles.perceptionTitle}>Algılanan Nesneler</Text>
+                <Text style={styles.perceptionMeta}>{Math.round((perception.certainty||0.6)*100)}% güven</Text>
+              </View>
+              <View style={styles.chipList}>
+                {(perception.objects||[]).map(o => (
+                  <TouchableOpacity key={o} style={styles.chip} onLongPress={()=>{setEditedObjects((perception.objects||[]).join(', ')); setCorrectionMode(true);}}>
+                    <Text style={styles.chipText}>{o}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {!correctionMode && (
+                <TouchableOpacity onPress={()=>{setEditedObjects((perception.objects||[]).join(', ')); setCorrectionMode(true);}}>
+                  <Text style={styles.correctionLink}>Düzelt</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          {perception && perception.certainty < 0.45 && !error && (
+            <View style={styles.lowConfidenceCard}>
+              <Text style={styles.lowConfidenceTitle}>Belirsiz ışık / açı</Text>
+              <Text style={styles.lowConfidenceText}>Daha net sonuç için farklı açı veya daha iyi aydınlatma deneyin.</Text>
+              <TouchableOpacity style={styles.retrySmall} onPress={()=>navigation.goBack()}>
+                <Text style={styles.retrySmallText}>Tekrar Çek</Text>
+              </TouchableOpacity>
             </View>
           )}
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator animating={true} size="large" color="white" />
-              <Text style={styles.loadingText}>AI analiz ediyor...</Text>
+              {skeleton ? (
+                <View style={styles.skeletonBlockWrapper}>
+                  {[1,2,3].map(i => (
+                    <View key={i} style={styles.skeletonLine} />
+                  ))}
+                </View>
+              ) : (
+                <>
+                  <ActivityIndicator animating={true} size="large" color="#667eea" />
+                  <Text style={styles.loadingText}>AI analiz ediyor...</Text>
+                </>
+              )}
             </View>
           ) : error ? (
             <View style={styles.errorContainer}>
@@ -523,25 +562,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
-  perceptionBox: {
-    backgroundColor: '#f1f5ff',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#d6e0ff',
-  },
-  perceptionTitle: { color: '#334', fontWeight: '700', marginBottom: 6 },
-  perceptionText: { color: '#334', fontFamily: 'monospace', fontSize: 12 },
-  correctionButton: { backgroundColor: '#eef2ff', padding: 10, borderRadius: 8, marginBottom: 10 },
-  correctionButtonText: { color: '#334', fontSize: 12, fontWeight: '600', textAlign: 'center' },
-  correctionBox: { backgroundColor: '#f5f7ff', padding: 12, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: '#dbe2ff' },
-  correctionLabel: { fontSize: 12, fontWeight: '600', color: '#334', marginBottom: 6 },
-  correctionInput: { backgroundColor: 'white' },
-  saveCorrection: { backgroundColor: '#667eea', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8 },
-  saveCorrectionText: { color: 'white', fontWeight: '600' },
-  cancelCorrection: { backgroundColor: '#e2e8f0', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8 },
-  cancelCorrectionText: { color: '#334', fontWeight: '600' },
+  perceptionChipPanel: { backgroundColor:'#f1f5ff', padding:12, borderRadius:16, marginBottom:12, borderWidth:1, borderColor:'#d8e2ff' },
+  perceptionHeaderRow:{ flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:8 },
+  chipList:{ flexDirection:'row', flexWrap:'wrap', gap:8 },
+  chip:{ backgroundColor:'rgba(102,126,234,0.12)', paddingVertical:6, paddingHorizontal:12, borderRadius:14, borderWidth:1, borderColor:'rgba(102,126,234,0.35)' },
+  chipText:{ color:'#334', fontSize:12, fontWeight:'600' },
+  correctionLink:{ marginTop:8, color:'#667eea', fontSize:12, fontWeight:'600' },
+  lowConfidenceCard:{ backgroundColor:'#FFF4DB', borderRadius:14, padding:12, marginBottom:12, borderWidth:1, borderColor:'#FFDFA3' },
+  lowConfidenceTitle:{ fontSize:13, fontWeight:'700', color:'#A26500', marginBottom:4 },
+  lowConfidenceText:{ fontSize:12, color:'#7A5A20', lineHeight:16 },
+  retrySmall:{ backgroundColor:'#FFB347', alignSelf:'flex-start', paddingVertical:6, paddingHorizontal:12, borderRadius:8, marginTop:8 },
+  retrySmallText:{ color:'#542D00', fontWeight:'600', fontSize:12 },
+  skeletonBlockWrapper:{ width:'100%', gap:10 },
+  skeletonLine:{ height:18, borderRadius:6, backgroundColor:'#e1e6f2', overflow:'hidden' },
 });
 
 export default PhotoChatScreen;

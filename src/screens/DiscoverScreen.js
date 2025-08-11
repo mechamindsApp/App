@@ -12,6 +12,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getPopularAnalyses } from '../services/apiService';
+import { likeAnalysis } from '../services/apiService';
+import { logLike } from '../services/analyticsService';
 
 const { width } = Dimensions.get('window');
 
@@ -30,6 +32,12 @@ const DiscoverScreen = () => {
 
   const handleOpenItem = (item) => {
     // Gelecekte detay ekranına gidebilir
+  };
+
+  const handleLike = async (item, index) => {
+    setItems(prev => prev.map((it, i) => i === index ? { ...it, likes: (it.likes || 0) + 1 } : it));
+    await likeAnalysis(item.id);
+    await logLike(null, item.id);
   };
 
   return (
@@ -91,7 +99,7 @@ const DiscoverScreen = () => {
                   </Text>
                   
                   <View style={styles.cardFooter}>
-                    <TouchableOpacity style={styles.likeButton}>
+                    <TouchableOpacity style={styles.likeButton} onPress={() => handleLike(item, idx)}>
                       <MaterialCommunityIcons 
                         name="heart-outline" 
                         size={16} 

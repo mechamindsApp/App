@@ -2,29 +2,33 @@ import os
 import uuid
 from datetime import datetime
 from typing import Optional, Dict, Any
+import importlib
 
-try:
-    from supabase import create_client, Client
-    HAS_SUPABASE = True
-except Exception:
-    HAS_SUPABASE = False
-
-_SUPABASE: Optional["Client"] = None
+# Lazy-loaded Supabase client (optional dependency)
+_SUPABASE: Optional[Any] = None  # type: ignore[name-defined]
 
 BUCKET_NAME = os.getenv("SUPABASE_BUCKET", "images")
 
 
-def _get_client() -> Optional["Client"]:
+def _get_client() -> Optional[Any]:  # type: ignore[valid-type]
     global _SUPABASE
-    if not HAS_SUPABASE:
-        return None
-    if _SUPABASE is None:
+    if _SUPABASE is not None:
+        return _SUPABASE
+
+    # Dynamically import supabase to avoid hard dependency at import time
+    try:
+        supabase_mod = importlib.import_module("supabase")
+        create_client = getattr(supabase_mod, "create_client", None)
+        if create_client is None:
+            return None
         url = os.getenv("SUPABASE_URL")
         key = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("SUPABASE_ANON_KEY")
         if not url or not key:
             return None
         _SUPABASE = create_client(url, key)
-    return _SUPABASE
+        return _SUPABASE
+    except Exception:
+        return None
 
 
 def upload_image_and_get_url(content: bytes, filename: str = "photo.jpg") -> Optional[str]:

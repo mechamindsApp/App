@@ -121,7 +121,6 @@ export const analyzePhoto = async (photoUri) => {
   const useMock = typeof extra.useMockAi === 'boolean' ? extra.useMockAi : true;
 
   try {
-    // Eğer backend aktifse, gerçek API'ye gönder
     if (!useMock && base) {
       const data = new FormData();
       data.append('file', { uri: photoUri, name: 'photo.jpg', type: 'image/jpeg' });
@@ -129,11 +128,15 @@ export const analyzePhoto = async (photoUri) => {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 20000,
       });
+      const perception = res.data?.perception || null;
+      const confidence = res.data?.perception?.certainty ?? 0.9;
       return {
         success: true,
         experience: res.data?.experience || 'Deneyimsel yorum alınamadı',
-        category: 'general',
-        confidence: 0.9,
+        perception,
+        id: res.data?.id || null,
+        category: Array.isArray(perception?.objects) && perception.objects.length ? perception.objects[0] : 'general',
+        confidence,
         timestamp: new Date().toISOString()
       };
     }
@@ -174,35 +177,52 @@ export const analyzePhoto = async (photoUri) => {
 };
 
 // Feedback gönderme mock fonksiyonu
-export const sendFeedback = async (feedbackText) => {
+export const sendFeedback = async (feedbackText, analysisId) => {
   try {
-    // Loading simülasyonu
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Feedback'i local storage'a kaydet (gerçek uygulamada server'a gönderilir)
-    const feedback = {
-      text: feedbackText,
-      timestamp: new Date().toISOString(),
-      id: Date.now()
-    };
-    
-    const raw = (await AsyncStorage.getItem('userFeedbacks')) || '[]';
-    const existingFeedbacks = JSON.parse(raw);
-    existingFeedbacks.push(feedback);
-    await AsyncStorage.setItem('userFeedbacks', JSON.stringify(existingFeedbacks));
-    
-    return {
-      success: true,
-      message: 'Geri bildiriminiz kaydedildi. Teşekkürler!',
-      id: feedback.id
-    };
-    
+    const extra = Constants?.expoConfig?.extra || Constants?.manifest?.extra || {};
+    const base = extra.apiBaseUrl || (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000');
+    const useMock = typeof extra.useMockAi === 'boolean' ? extra.useMockAi : true;
+    const payload = { feedback: feedbackText, analysis_id: analysisId };
+    if (!useMock && base) {
+      await axios.post(`${base}/feedback`, payload, { timeout: 10000 });
+    } else {
+      // fallback local
+      const raw = (await AsyncStorage.getItem('userFeedbacks')) || '[]';
+      const existing = JSON.parse(raw);
+      existing.push({ ...payload, ts: Date.now() });
+      await AsyncStorage.setItem('userFeedbacks', JSON.stringify(existing));
+    }
+    return { success: true };
   } catch (error) {
-    console.error('Feedback Error:', error);
-    return {
-      success: false,
-      error: 'Geri bildirim gönderilemedi. Lütfen tekrar deneyin.'
-    };
+    return { success: false, error: 'Geri bildirim gönderilemedi.' };
+  }
+};
+
+export const likeAnalysis = async (analysisId) => {
+  const extra = Constants?.expoConfig?.extra || Constants?.manifest?.extra || {};
+  const base = extra.apiBaseUrl || (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000');
+  const useMock = typeof extra.useMockAi === 'boolean' ? extra.useMockAi : true;
+  try {
+    if (!useMock && base) {
+      await axios.post(`${base}/like`, { analysis_id: analysisId }, { timeout: 8000 });
+    }
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+};
+
+export const submitCorrection = async (analysisId, original, corrected) => {
+  const extra = Constants?.expoConfig?.extra || Constants?.manifest?.extra || {};
+  const base = extra.apiBaseUrl || (Platform.OS === 'android' ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000');
+  const useMock = typeof extra.useMockAi === 'boolean' ? extra.useMockAi : true;
+  try {
+    if (!useMock && base) {
+      await axios.post(`${base}/correction`, { analysis_id: analysisId, original, corrected }, { timeout: 10000 });
+    }
+    return { success: true };
+  } catch {
+    return { success: false };
   }
 };
 
@@ -268,5 +288,7 @@ export default {
   analyzePhoto,
   sendFeedback,
   getUserAnalytics,
-  getPopularAnalyses
+  getPopularAnalyses,
+  likeAnalysis,
+  submitCorrection
 };

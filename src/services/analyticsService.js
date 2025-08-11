@@ -17,4 +17,30 @@ export async function logFeedbackSent(userId, feedbackLength) {
   });
 }
 
+export async function logCorrectionApplied(userId, original, corrected) {
+  console.log('Analytics: Correction Applied', {
+    user_id: userId,
+    original,
+    corrected,
+    timestamp: new Date().toISOString()
+  });
+}
+
+export async function logLike(userId, analysisId) {
+  console.log('Analytics: Like', {
+    user_id: userId,
+    analysis_id: analysisId,
+    timestamp: new Date().toISOString()
+  });
+}
+
+export async function logShare(userId, analysisId, channel) {
+  console.log('Analytics: Share', {
+    user_id: userId,
+    analysis_id: analysisId,
+    channel,
+    timestamp: new Date().toISOString()
+  });
+}
+
 // İhtiyaca göre başka event fonksiyonları eklenebilir.

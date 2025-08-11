@@ -7,7 +7,8 @@ import { ThemeContext } from '../context/ThemeContext';
 import { lightTheme, darkTheme } from '../theme/theme';
 import VoiceInputBar from '../components/VoiceInputBar';
 import { analyzePhoto, sendFeedback } from '../services/apiService';
-import { logPhotoAnalyzed, logFeedbackSent } from '../services/analyticsService';
+import { likeAnalysis, submitCorrection } from '../services/apiService';
+import { logPhotoAnalyzed, logFeedbackSent, logCorrectionApplied } from '../services/analyticsService';
 import { logError } from '../services/errorTrackingService';
 import { startRecording, stopRecording } from '../services/audioService';
 import { getUserData, logout } from '../utils/auth';
@@ -25,6 +26,11 @@ const PhotoChatScreen = ({ route, navigation }) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [perception, setPerception] = useState(null);
+  const [showPerception, setShowPerception] = useState(false);
+  const [analysisId, setAnalysisId] = useState(null);
+  const [editedObjects, setEditedObjects] = useState('');
+  const [correctionMode, setCorrectionMode] = useState(false);
   const { darkMode } = useContext(ThemeContext);
   const theme = useTheme();
 
@@ -59,6 +65,8 @@ const PhotoChatScreen = ({ route, navigation }) => {
             if (userId) await logError(userId, 'PhotoChatScreen', result.error);
           } else if (result && result.experience) {
             setMessages([{ id: Date.now(), text: result.experience }]);
+            setPerception(result.perception || null);
+            setAnalysisId(result.perception ? result.perception.id || null : null);
             // Feedback modalını 3 saniye sonra aç
             setTimeout(() => {
               setShowFeedback(true);
@@ -143,6 +151,18 @@ const PhotoChatScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleApplyCorrection = async () => {
+    if (!perception) return;
+    const original = (perception.objects || []).join(', ');
+    const corrected = editedObjects.split(',').map(s => s.trim()).filter(Boolean);
+    if (!corrected.length) return;
+    await submitCorrection(analysisId, original, corrected.join(', '));
+    await logCorrectionApplied(null, original, corrected.join(', '));
+    // locally update perception
+    setPerception(p => ({ ...p, objects: corrected }));
+    setCorrectionMode(false);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
@@ -158,7 +178,12 @@ const PhotoChatScreen = ({ route, navigation }) => {
             <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>AI Analiz</Text>
-          <View style={styles.placeholder} />
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => setShowPerception(v => !v)}
+          >
+            <MaterialCommunityIcons name={showPerception ? 'eye-off' : 'eye'} size={20} color="white" />
+          </TouchableOpacity>
         </View>
 
         {/* Photo Display - Much Larger */}
@@ -176,6 +201,12 @@ const PhotoChatScreen = ({ route, navigation }) => {
 
         {/* Content Area */}
         <View style={styles.contentArea}>
+          {showPerception && perception && (
+            <View style={styles.perceptionBox}>
+              <Text style={styles.perceptionTitle}>Algılanan</Text>
+              <Text style={styles.perceptionText}>{JSON.stringify(perception, null, 2)}</Text>
+            </View>
+          )}
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator animating={true} size="large" color="white" />
@@ -492,6 +523,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
+  perceptionBox: {
+    backgroundColor: '#f1f5ff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#d6e0ff',
+  },
+  perceptionTitle: { color: '#334', fontWeight: '700', marginBottom: 6 },
+  perceptionText: { color: '#334', fontFamily: 'monospace', fontSize: 12 },
+  correctionButton: { backgroundColor: '#eef2ff', padding: 10, borderRadius: 8, marginBottom: 10 },
+  correctionButtonText: { color: '#334', fontSize: 12, fontWeight: '600', textAlign: 'center' },
+  correctionBox: { backgroundColor: '#f5f7ff', padding: 12, borderRadius: 10, marginBottom: 12, borderWidth: 1, borderColor: '#dbe2ff' },
+  correctionLabel: { fontSize: 12, fontWeight: '600', color: '#334', marginBottom: 6 },
+  correctionInput: { backgroundColor: 'white' },
+  saveCorrection: { backgroundColor: '#667eea', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8 },
+  saveCorrectionText: { color: 'white', fontWeight: '600' },
+  cancelCorrection: { backgroundColor: '#e2e8f0', paddingVertical: 10, paddingHorizontal: 18, borderRadius: 8 },
+  cancelCorrectionText: { color: '#334', fontWeight: '600' },
 });
 
 export default PhotoChatScreen;

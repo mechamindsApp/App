@@ -12,6 +12,8 @@ import { logPhotoAnalyzed, logFeedbackSent, logCorrectionApplied } from '../serv
 import { logError } from '../services/errorTrackingService';
 import { startRecording, stopRecording } from '../services/audioService';
 import { getUserData, logout } from '../utils/auth';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 
 const { width, height } = Dimensions.get('window');
 
@@ -34,6 +36,7 @@ const PhotoChatScreen = ({ route, navigation }) => {
   const [skeleton, setSkeleton] = useState(true);
   const { darkMode } = useContext(ThemeContext);
   const theme = useTheme();
+  const viewShotRef = React.useRef(null);
 
   useEffect(() => {
     const fetchAnalysis = async () => {
@@ -164,9 +167,16 @@ const PhotoChatScreen = ({ route, navigation }) => {
     if (!corrected.length) return;
     await submitCorrection(analysisId, original, corrected.join(', '));
     await logCorrectionApplied(null, original, corrected.join(', '));
-    // locally update perception
+    // locally update
     setPerception(p => ({ ...p, objects: corrected }));
     setCorrectionMode(false);
+    // regenerate experience text locally (quick feedback)
+    setMessages([{ id: Date.now(), text: 'Düzeltilmiş nesnelere göre yeniden yorumlanıyor...' }]);
+    // fallback: just join objects into a heuristic summary
+    const summary = `• Nesneler güncellendi: ${corrected.slice(0,5).join(', ')}\n• Bu düzeltme deneyim önerilerini daha ilgili hale getirecek.\n• Gerekirse tekrar düzenleyebilirsin.`;
+    setTimeout(()=>{
+      setMessages([{ id: Date.now(), text: summary }]);
+    },600);
   };
 
   return (
@@ -184,12 +194,23 @@ const PhotoChatScreen = ({ route, navigation }) => {
             <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>AI Analiz</Text>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => setShowPerception(v => !v)}
-          >
-            <MaterialCommunityIcons name={showPerception ? 'eye-off' : 'eye'} size={20} color="white" />
-          </TouchableOpacity>
+          <View style={{flexDirection:'row', gap:8}}>
+            <TouchableOpacity style={styles.backButton} onPress={() => setShowPerception(v => !v)}>
+              <MaterialCommunityIcons name={showPerception ? 'eye-off' : 'eye'} size={20} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.backButton} onPress={async ()=>{
+              try {
+                if (viewShotRef.current) {
+                  const uri = await viewShotRef.current.capture();
+                  if (await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(uri, { dialogTitle: 'Analizi Paylaş' });
+                  }
+                }
+              } catch(e) { console.warn('Share failed', e); }
+            }}>
+              <MaterialCommunityIcons name="share-variant" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Photo Display - Much Larger */}
@@ -339,6 +360,188 @@ const PhotoChatScreen = ({ route, navigation }) => {
           </View>
         )}
       </LinearGradient>
+      <ViewShot ref={viewShotRef} style={{flex:1}} options={{format:'jpg', quality:0.9}}>
+        {/* Main content wrapped with ViewShot for screenshot sharing */}
+        <LinearGradient
+          colors={['#667eea', '#764ba2']}
+          style={styles.gradient}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <MaterialCommunityIcons name="arrow-left" size={24} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>AI Analiz</Text>
+            <View style={{flexDirection:'row', gap:8}}>
+              <TouchableOpacity style={styles.backButton} onPress={() => setShowPerception(v => !v)}>
+                <MaterialCommunityIcons name={showPerception ? 'eye-off' : 'eye'} size={20} color="white" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.backButton} onPress={async ()=>{
+                try {
+                  if (viewShotRef.current) {
+                    const uri = await viewShotRef.current.capture();
+                    if (await Sharing.isAvailableAsync()) {
+                      await Sharing.shareAsync(uri, { dialogTitle: 'Analizi Paylaş' });
+                    }
+                  }
+                } catch(e) { console.warn('Share failed', e); }
+              }}>
+                <MaterialCommunityIcons name="share-variant" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Photo Display - Much Larger */}
+          {photoUri && (
+            <View style={styles.photoSection}>
+              <View style={styles.photoContainer}>
+                <Image source={{ uri: photoUri }} style={styles.photo} />
+                <LinearGradient
+                  colors={['transparent', 'rgba(0,0,0,0.3)']}
+                  style={styles.photoOverlay}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* Content Area */}
+          <View style={styles.contentArea}>
+            {showPerception && perception && (
+              <View style={styles.perceptionChipPanel}>
+                <View style={styles.perceptionHeaderRow}>
+                  <Text style={styles.perceptionTitle}>Algılanan Nesneler</Text>
+                  <Text style={styles.perceptionMeta}>{Math.round((perception.certainty||0.6)*100)}% güven</Text>
+                </View>
+                <View style={styles.chipList}>
+                  {(perception.objects||[]).map(o => (
+                    <TouchableOpacity key={o} style={styles.chip} onLongPress={()=>{setEditedObjects((perception.objects||[]).join(', ')); setCorrectionMode(true);}}>
+                      <Text style={styles.chipText}>{o}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {!correctionMode && (
+                  <TouchableOpacity onPress={()=>{setEditedObjects((perception.objects||[]).join(', ')); setCorrectionMode(true);}}>
+                    <Text style={styles.correctionLink}>Düzelt</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+            {perception && perception.certainty < 0.45 && !error && (
+              <View style={styles.lowConfidenceCard}>
+                <Text style={styles.lowConfidenceTitle}>Belirsiz ışık / açı</Text>
+                <Text style={styles.lowConfidenceText}>Daha net sonuç için farklı açı veya daha iyi aydınlatma deneyin.</Text>
+                <TouchableOpacity style={styles.retrySmall} onPress={()=>navigation.goBack()}>
+                  <Text style={styles.retrySmallText}>Tekrar Çek</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                {skeleton ? (
+                  <View style={styles.skeletonBlockWrapper}>
+                    {[1,2,3].map(i => (
+                      <View key={i} style={styles.skeletonLine} />
+                    ))}
+                  </View>
+                ) : (
+                  <>
+                    <ActivityIndicator animating={true} size="large" color="#667eea" />
+                    <Text style={styles.loadingText}>AI analiz ediyor...</Text>
+                  </>
+                )}
+              </View>
+            ) : error ? (
+              <View style={styles.errorContainer}>
+                <MaterialCommunityIcons name="alert-circle" size={48} color="#FF6B6B" />
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity 
+                  style={styles.retryButton}
+                  onPress={() => navigation.goBack()}
+                >
+                  <Text style={styles.retryButtonText}>Tekrar Dene</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <ScrollView style={styles.chatContainer} showsVerticalScrollIndicator={false}>
+                {messages.map(msg => (
+                  <View key={msg.id} style={styles.messageContainer}>
+                    <View style={styles.messageBubble}>
+                      <MaterialCommunityIcons name="robot" size={24} color="#667eea" style={styles.aiIcon} />
+                      <Text style={styles.messageText}>{msg.text}</Text>
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Action Buttons */}
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => navigation.navigate('Home')}
+              >
+                <LinearGradient
+                  colors={['#FF6B6B', '#FF8E8E']}
+                  style={styles.actionButtonGradient}
+                >
+                  <MaterialCommunityIcons name="camera" size={20} color="white" />
+                  <Text style={styles.actionButtonText}>Yeni Fotoğraf</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Feedback Modal */}
+          <Modal visible={showFeedback} onDismiss={() => setShowFeedback(false)} contentContainerStyle={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <MaterialCommunityIcons name="star" size={32} color="#FFD700" />
+              <Text style={styles.modalTitle}>AI yanıtı nasıldı?</Text>
+            </View>
+            <TextInput
+              mode="outlined"
+              label="Yorumunuzu yazın..."
+              value={feedbackText}
+              onChangeText={setFeedbackText}
+              multiline
+              style={styles.feedbackInput}
+              theme={{
+                colors: {
+                  primary: '#667eea',
+                }
+              }}
+            />
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalButton} onPress={handleSendFeedback}>
+                <LinearGradient
+                  colors={['#4ECDC4', '#6BCBD1']}
+                  style={styles.modalButtonGradient}
+                >
+                  <Text style={styles.modalButtonText}>Gönder</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalCancelButton]} 
+                onPress={() => setShowFeedback(false)}
+              >
+                <Text style={styles.modalCancelText}>Kapat</Text>
+              </TouchableOpacity>
+            </View>
+          </Modal>
+
+          {/* Error Snackbar */}
+          {error && (
+            <View style={styles.snackbarContainer}>
+              <View style={styles.snackbar}>
+                <MaterialCommunityIcons name="alert" size={20} color="white" />
+                <Text style={styles.snackbarText}>{error}</Text>
+              </View>
+            </View>
+          )}
+        </LinearGradient>
+      </ViewShot>
     </SafeAreaView>
   );
 };

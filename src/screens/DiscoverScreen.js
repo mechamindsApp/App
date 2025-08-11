@@ -20,11 +20,14 @@ const { width } = Dimensions.get('window');
 const DiscoverScreen = () => {
   const insets = useSafeAreaInsets();
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
+      setLoading(true);
       const res = await getPopularAnalyses();
       if (res?.analyses) setItems(res.analyses);
+      setTimeout(()=>setLoading(false),400);
     })();
   }, []);
 
@@ -71,7 +74,22 @@ const DiscoverScreen = () => {
 
         {/* Discoveries Feed */}
         <ScrollView style={styles.feedContainer} showsVerticalScrollIndicator={false}>
-          {items.map((item, idx) => (
+          {loading && (
+            <View style={{gap:16, paddingTop:10}}>
+              {[1,2,3,4].map(i => (
+                <View key={i} style={[styles.discoveryCard,{height:180, padding:0}]}> 
+                  <View style={{flex:1, backgroundColor:'rgba(255,255,255,0.08)'}} />
+                </View>
+              ))}
+            </View>
+          )}
+          {!loading && items.length === 0 && (
+            <View style={{alignItems:'center', padding:40}}>
+              <MaterialCommunityIcons name="image-off" size={42} color="white" />
+              <Text style={{color:'white', opacity:0.8, marginTop:12, textAlign:'center'}}>Henüz analiz yok. İlk fotoğrafını paylaş ve burayı doldur.</Text>
+            </View>
+          )}
+          {!loading && items.map((item, idx) => (
             <TouchableOpacity key={item.id || idx} style={styles.discoveryCard} onPress={() => handleOpenItem(item)}>
               <View style={styles.cardContent}>
                 <View style={styles.imageContainer}>

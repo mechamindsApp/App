@@ -69,7 +69,7 @@ def _perception_via_openai(image_bytes: bytes) -> Dict[str, Any]:
         + STRICT_SPEC
         + " Be careful with ambiguous items. If a 'brush' appears, decide if it's a paintbrush vs toothbrush vs hairbrush based on head/handle/usage cues. "
           "If a 'mouse' appears, prefer 'bilgisayar faresi' unless it's clearly an animal (tail, fur). "
-          "Avoid guessing construction materials unless obvious (bricks, cement bags, helmets)."
+          "Avoid guessing construction materials unless obvious (bricks, cement bags, helmets). If you are not confident about the scene, describe only the main objects and leave the scene/context blank. Do not guess."
     )
     try:
         resp = _openai_client.chat.completions.create(
@@ -206,22 +206,40 @@ def normalize_scene(scene: Dict[str, Any]) -> Dict[str, Any]:
 
 def _experience_with_openai(scene_json: Dict[str, Any]) -> str:
     assert _openai_client is not None
-    style = (
-        "Türkçe, kısa ve insani bir tonda yaz. 3 madde halinde pratik ve yaşanmışlık içeren öneriler ver. "
-        "Gerçekçi ol, emin olmadığın yerde kibarca belirt. Abartma, pazarlama dili kullanma."
-    )
+    
+    # Check for UI/UX context
+    ui_ux_keywords = {"arayüz", "ekran görüntüsü", "uygulama", "buton", "web sitesi", "ui", "ux"}
+    objects_lower = {str(o).lower() for o in scene_json.get("objects", [])}
+    is_ui_ux_context = any(keyword in objects_lower for keyword in ui_ux_keywords)
+
+    if is_ui_ux_context:
+        style = (
+            "Sen 'Voyager' adında, deneyimli bir UI/UX uzmanısın. "
+            "Sana sunulan ekran görüntüsünü analiz et ve kullanıcı deneyimini iyileştirecek 3 somut, pratik ve uygulanabilir öneri sun. "
+            "Önerilerin net, kısa ve profesyonel bir dilde olsun. Her öneri '• ' ile başlasın. "
+            "Örnek: '• Ana eylem butonu daha belirgin hale getirilebilir.' veya '• Font boyutu okunabilirliği artırmak için büyütülebilir.'"
+        )
+    else:
+        style = (
+            "Sen 'Voyager' adında, bilge ve deneyimli bir gezginsin. "
+            "Gördüğün sahneyi, sanki orayı daha önce defalarca ziyaret etmiş gibi, insani ve samimi bir tonda yorumla. "
+            "3 madde halinde pratik, yaşanmışlık içeren ve başkasının kolayca fark edemeyeceği tavsiyeler ver. "
+            "Gerçekçi ol, abartma, pazarlama dili kullanma. Her madde '• ' ile başlasın.\n"
+            "DİKKAT: Kesinlikle alakasız konulara girme. Örneğin, ofis malzemeleri görüyorsan piknik hakkında konuşma. Sadece sağlanan JSON bağlamına sadık kal."
+        )
+
     prompt = (
-        f"{style}\nBağlam: {json.dumps(scene_json, ensure_ascii=False)}\n" 
+        f"{style}\nBağlam: {json.dumps(scene_json, ensure_ascii=False)}\n"
         "Cevap formatı: her satır '• ' ile başlasın."
     )
     try:
         resp = _openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are helpful and grounded."},
+                {"role": "system", "content": "You are Voyager, a helpful and wise guide."},
                 {"role": "user", "content": prompt},
             ],
-            temperature=0.3,
+            temperature=0.4, # Slightly increased for more creative/human-like responses
         )
         return resp.choices[0].message.content or ""
     except Exception:

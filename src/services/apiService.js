@@ -218,11 +218,22 @@ export const submitCorrection = async (analysisId, original, corrected) => {
   const useMock = typeof extra.useMockAi === 'boolean' ? extra.useMockAi : true;
   try {
     if (!useMock && base) {
-      await axios.post(`${base}/correction`, { analysis_id: analysisId, original, corrected }, { timeout: 10000 });
+      // Log the correction first
+      axios.post(`${base}/correction`, { analysis_id: analysisId, original, corrected }, { timeout: 10000 });
+      
+      // Then, trigger the refinement
+      const response = await axios.post(`${base}/refine-analysis`, {
+        analysis_id: analysisId,
+        corrected_objects: corrected.split(',').map(s => s.trim()).filter(Boolean),
+      }, { timeout: 20000 });
+
+      return { success: true, data: response.data };
     }
-    return { success: true };
-  } catch {
-    return { success: false };
+    // Mock fallback can remain simple
+    return { success: true, data: { experience: `Mock AI: Nesneler güncellendi: ${corrected}` } };
+  } catch (error) {
+    console.warn('Correction/Refinement failed:', error?.message);
+    return { success: false, error: 'Düzeltme gönderilemedi veya yeniden analiz başarısız oldu.' };
   }
 };
 

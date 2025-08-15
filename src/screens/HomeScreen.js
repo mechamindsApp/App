@@ -1,5 +1,5 @@
-import React, { useContext } from 'react';
-import { View, StyleSheet, Alert, Dimensions, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import React, { useContext, useState } from 'react';
+import { View, StyleSheet, Alert, Dimensions, TouchableOpacity, Platform, StatusBar, ActivityIndicator } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -10,24 +10,38 @@ const { width, height } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
   const { darkMode } = useContext(ThemeContext);
+  const [loading, setLoading] = useState(false);
 
   const handleTakePhoto = async () => {
+    setLoading(true);
     const uri = await takePhoto();
     if (uri) {
       navigation.navigate('PhotoPreview', { photoUri: uri });
     } else {
       Alert.alert('Kamera erişimi reddedildi veya işlem iptal edildi.');
     }
+    setLoading(false);
   };
 
   const handlePickImage = async () => {
+    setLoading(true);
     const uri = await pickImage();
     if (uri) {
       navigation.navigate('PhotoPreview', { photoUri: uri });
     } else {
       Alert.alert('Galeri erişimi reddedildi veya işlem iptal edildi.');
     }
+    setLoading(false);
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#ffffff" />
+        <Text style={styles.loadingText}>Voyager hazırlanıyor...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -96,6 +110,17 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#667eea',
+  },
+  loadingText: {
+    color: 'white',
+    marginTop: 15,
+    fontSize: 16,
   },
   gradient: {
     flex: 1,

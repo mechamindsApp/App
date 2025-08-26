@@ -2,6 +2,11 @@
 firebase_service_account.json
 .env
 *.env
+*.env.local
+
+# Python sanal ortamları (yalnızca birini kullanın: .venv tercih edilir)
+.venv/
+venv/
 # Python
 __pycache__/
 *.pyc

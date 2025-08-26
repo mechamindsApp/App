@@ -1,32 +1,46 @@
-import React, { useContext } from 'react';
+import { useContext } from 'react';
 import { View, StyleSheet, Platform, StatusBar } from 'react-native';
-import { Text, Switch, Card, useTheme } from 'react-native-paper';
+import { Text, Switch, Card } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemeContext } from '../context/ThemeContext';
 import { lightTheme, darkTheme } from '../theme/theme';
 
 const SettingsScreen = () => {
   const { darkMode, toggleDarkMode } = useContext(ThemeContext);
-  const theme = useTheme();
+  const theme = darkMode ? darkTheme : lightTheme;
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.gradient}
-      >
+      <LinearGradient colors={theme.gradient} style={styles.gradient}>
         <View style={styles.content}>
-          <Card style={styles.card}>
+          <Card
+            style={[
+              styles.card,
+              {
+                backgroundColor:
+                  theme.background === '#ffffff'
+                    ? 'rgba(255,255,255,0.95)'
+                    : theme.surfaceMatte,
+              },
+            ]}
+          >
             <Card.Content>
-              <Text variant="headlineMedium" style={styles.title}>Ayarlar</Text>
+              <Text
+                variant="headlineMedium"
+                style={[styles.title, { color: theme.text }]}
+              >
+                Ayarlar
+              </Text>
               <View style={styles.row}>
-                <Text style={styles.rowText}>Karanlık Mod</Text>
+                <Text style={[styles.rowText, { color: theme.text }]}>Karanlık Mod</Text>
                 <Switch value={darkMode} onValueChange={toggleDarkMode} />
               </View>
               <View style={styles.row}>
-                <Text style={styles.rowText}>Bildirimler</Text>
+                <Text style={[styles.rowText, { color: theme.text }]}>Bildirimler</Text>
                 <Switch value={false} onValueChange={() => {}} />
               </View>
-              <Text style={styles.privacy}>Gizlilik Politikası (placeholder)</Text>
+              <Text style={[styles.privacy, { color: theme.mutedText || '#666' }]}>
+                Gizlilik Politikası (placeholder)
+              </Text>
             </Card.Content>
           </Card>
         </View>

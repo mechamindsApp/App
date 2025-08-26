@@ -1,11 +1,14 @@
-import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Text } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useContext } from 'react';
+import { ThemeContext } from '../context/ThemeContext';
+import { lightTheme, darkTheme } from '../theme/theme';
 
 const AppHeader = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { darkMode } = useContext(ThemeContext);
+  const theme = darkMode ? darkTheme : lightTheme;
   const topPad = insets.top + 10; // küçük ekstra boşluk
 
   const handleSettingsPress = () => {
@@ -18,10 +21,10 @@ const AppHeader = ({ navigation }) => {
         <View style={styles.sideSpacer} />
         <View style={styles.centerBrand}>
           {/* Logo placeholder (user will replace later) */}
-          <View style={styles.logoPlaceholder} />
+          <View style={[styles.logoPlaceholder, { borderColor: 'rgba(255,255,255,0.9)' }]} />
         </View>
-        <TouchableOpacity style={styles.settingsButton} onPress={handleSettingsPress}>
-          <MaterialCommunityIcons name="cog" size={24} color="white" />
+        <TouchableOpacity style={[styles.settingsButton, { backgroundColor: theme.surfaceGlass }]} onPress={handleSettingsPress}>
+          <MaterialCommunityIcons name="cog" size={24} color={theme.text === '#fff' ? 'white' : 'white'} />
         </TouchableOpacity>
       </View>
     </View>

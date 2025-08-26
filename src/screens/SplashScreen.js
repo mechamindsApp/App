@@ -1,13 +1,14 @@
-import React from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
-import { Text, Button, Card, useTheme } from 'react-native-paper';
+import { View, StyleSheet } from 'react-native';
+import { Text, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
-const { width, height } = Dimensions.get('window');
+import { useContext } from 'react';
+import { ThemeContext } from '../context/ThemeContext';
+import { lightTheme, darkTheme } from '../theme/theme';
 
 const SplashScreen = ({ navigation }) => {
-  const theme = useTheme();
+  const { darkMode } = useContext(ThemeContext);
+  const theme = darkMode ? darkTheme : lightTheme;
 
   const handleStartExperience = () => {
     navigation.navigate('Login');
@@ -15,10 +16,7 @@ const SplashScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.gradient}
-      >
+      <LinearGradient colors={theme.gradient} style={styles.gradient}>
         {/* Ana İçerik */}
         <View style={styles.content}>
           {/* Logo/İkon */}
@@ -27,17 +25,17 @@ const SplashScreen = ({ navigation }) => {
           </View>
 
           {/* Başlık */}
-          <Text variant="displayMedium" style={styles.title}>
+          <Text variant="displayMedium" style={[styles.title, { color: 'white' }] }>
             AI Experience
           </Text>
           
           {/* Alt Başlık */}
-          <Text variant="headlineSmall" style={styles.subtitle}>
+          <Text variant="headlineSmall" style={[styles.subtitle, { color: 'rgba(255,255,255,0.9)' }]}>
             Fotoğraflarınızı AI ile Keşfedin
           </Text>
 
           {/* Açıklama */}
-          <Text variant="bodyLarge" style={styles.description}>
+          <Text variant="bodyLarge" style={[styles.description, { color: 'rgba(255,255,255,0.8)' }]}>
             Yapay zeka destekli fotoğraf analizi ile görsellerinizi yeni bir perspektiften deneyimleyin
           </Text>
 
@@ -65,12 +63,12 @@ const SplashScreen = ({ navigation }) => {
             onPress={handleStartExperience}
             style={styles.startButton}
             contentStyle={styles.buttonContent}
-            labelStyle={styles.buttonLabel}
+            labelStyle={[styles.buttonLabel, { color: theme.primary }]}
           >
             Deneyime Başla
           </Button>
           
-          <Text style={styles.footerText}>
+          <Text style={[styles.footerText, { color: 'rgba(255,255,255,0.7)' }]}>
             Geleceğin fotoğraf deneyimi burada başlıyor
           </Text>
         </View>

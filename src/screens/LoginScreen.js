@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,15 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ThemeContext } from '../context/ThemeContext';
+import { lightTheme, darkTheme } from '../theme/theme';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function LoginScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
+  const { darkMode } = useContext(ThemeContext);
+  const theme = darkMode ? darkTheme : lightTheme;
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -38,10 +42,7 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.gradient}
-      >
+  <LinearGradient colors={theme.gradient} style={styles.gradient}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>AI Experience</Text>

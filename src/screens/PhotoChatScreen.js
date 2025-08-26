@@ -1,41 +1,39 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, Alert, SafeAreaView, Dimensions, TouchableOpacity } from 'react-native';
-import { Button, TextInput, Modal, ActivityIndicator, Card, Snackbar, useTheme } from 'react-native-paper';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, StyleSheet, ScrollView, Alert, SafeAreaView, TouchableOpacity } from 'react-native';
+import { TextInput, Modal, ActivityIndicator } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { ThemeContext } from '../context/ThemeContext';
-import { lightTheme, darkTheme } from '../theme/theme';
-import VoiceInputBar from '../components/VoiceInputBar';
-import { analyzePhoto, sendFeedback } from '../services/apiService';
-import { likeAnalysis, submitCorrection } from '../services/apiService';
+// import { ThemeContext } from '../context/ThemeContext';
+// import { lightTheme, darkTheme } from '../theme/theme';
+import { analyzePhoto, sendFeedback, submitCorrection } from '../services/apiService';
 import { logPhotoAnalyzed, logFeedbackSent, logCorrectionApplied } from '../services/analyticsService';
 import { logError } from '../services/errorTrackingService';
-import { startRecording, stopRecording } from '../services/audioService';
+// import { startRecording, stopRecording } from '../services/audioService';
 import { getUserData, logout } from '../utils/auth';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-
-const { width, height } = Dimensions.get('window');
+import { Dimensions } from 'react-native';
+const { height } = Dimensions.get('window');
 
 const PhotoChatScreen = ({ route, navigation }) => {
   const { photoUri } = route.params || {};
-  const [input, setInput] = useState('');
+  // const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [recording, setRecording] = useState(null);
-  const [isRecording, setIsRecording] = useState(false);
+  // const [recording, setRecording] = useState(null);
+  // const [isRecording, setIsRecording] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
-  const [feedbackSent, setFeedbackSent] = useState(false);
+  // const [feedbackSent, setFeedbackSent] = useState(false);
   const [perception, setPerception] = useState(null);
   const [showPerception, setShowPerception] = useState(false);
   const [analysisId, setAnalysisId] = useState(null);
   const [editedObjects, setEditedObjects] = useState('');
   const [correctionMode, setCorrectionMode] = useState(false);
   const [skeleton, setSkeleton] = useState(true);
-  const { darkMode } = useContext(ThemeContext);
-  const theme = useTheme();
+  // const { darkMode } = useContext(ThemeContext);
+  // const theme = useTheme();
   const viewShotRef = React.useRef(null);
 
   useEffect(() => {
@@ -123,7 +121,7 @@ const PhotoChatScreen = ({ route, navigation }) => {
         userId = userData?.user?.email || userData?.user?.id || null;
       } catch {}
       if (userId) await logFeedbackSent(userId, feedbackText.length);
-      setFeedbackSent(true);
+  // feedback sent flag omitted for now
       setShowFeedback(false);
       setFeedbackText('');
       Alert.alert('Teşekkürler!', 'Geri bildiriminiz kaydedildi.');
@@ -132,59 +130,52 @@ const PhotoChatScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleSendMessage = () => {
-    if (input.trim()) {
-      setMessages(prev => [...prev, { id: Date.now(), text: input }]);
-      setInput('');
-    }
-  };
+  // const handleSendMessage = () => {
+  //   if (input.trim()) {
+  //     setMessages(prev => [...prev, { id: Date.now(), text: input }]);
+  //     setInput('');
+  //   }
+  // };
 
-  const handleVoicePress = async () => {
-    if (!isRecording) {
-      const rec = await startRecording();
-      if (rec) {
-        setRecording(rec);
-        setIsRecording(true);
-      } else {
-        Alert.alert('Ses kaydı başlatılamadı.');
-      }
-    } else {
-      const uri = await stopRecording(recording);
-      setIsRecording(false);
-      setRecording(null);
-      if (uri) {
-        setMessages(prev => [...prev, { id: Date.now(), text: 'Sesli mesaj gönderildi: ' + uri }]);
-      } else {
-        Alert.alert('Ses kaydı alınamadı.');
-      }
-    }
-  };
+  // const handleVoicePress = async () => {
+  //   if (!isRecording) {
+  //     const rec = await startRecording();
+  //     if (rec) {
+  //       setRecording(rec);
+  //       setIsRecording(true);
+  //     } else {
+  //       Alert.alert('Ses kaydı başlatılamadı.');
+  //     }
+  //   } else {
+  //     const uri = await stopRecording(recording);
+  //     setIsRecording(false);
+  //     setRecording(null);
+  //     if (uri) {
+  //       setMessages(prev => [...prev, { id: Date.now(), text: 'Sesli mesaj gönderildi: ' + uri }]);
+  //     } else {
+  //       Alert.alert('Ses kaydı alınamadı.');
+  //     }
+  //   }
+  // };
 
   const handleApplyCorrection = async () => {
     if (!perception || !analysisId) return;
     const original = (perception.objects || []).join(', ');
     const corrected = editedObjects.split(',').map(s => s.trim()).filter(Boolean);
     if (!corrected.length) return;
-
-    setLoading(true); // Show loading indicator during re-analysis
+    setLoading(true);
     setMessages([{ id: Date.now(), text: 'Voyager, düzeltilmiş nesnelere göre yeniden yorumluyor...' }]);
-
     const result = await submitCorrection(analysisId, original, corrected.join(', '));
-    
     if (result.success && result.data) {
-      // Update local state with the new, refined data from the backend
       setPerception(prev => ({ ...prev, ...result.data.perception, objects: corrected }));
       setMessages([{ id: Date.now(), text: result.data.experience }]);
       await logCorrectionApplied(null, original, corrected.join(', '));
     } else {
-      // Handle error case
       setError(result.error || 'Yeniden analiz sırasında bir hata oluştu.');
-      // Revert to a simple local update as a fallback
       setPerception(p => ({ ...p, objects: corrected }));
       const summary = `• Nesneler güncellendi: ${corrected.slice(0,5).join(', ')}\n• Sunucuya ulaşılamadı, bu nedenle yerel olarak güncellendi.`;
       setMessages([{ id: Date.now(), text: summary }]);
     }
-    
     setCorrectionMode(false);
     setLoading(false);
   };
@@ -240,7 +231,7 @@ const PhotoChatScreen = ({ route, navigation }) => {
 
           {/* Content Area */}
           <View style={styles.contentArea}>
-            {showPerception && perception && (
+      {showPerception && perception && (
               <View style={styles.perceptionChipPanel}>
                 <View style={styles.perceptionHeaderRow}>
                   <Text style={styles.perceptionTitle}>Algılanan Nesneler</Text>
@@ -248,15 +239,32 @@ const PhotoChatScreen = ({ route, navigation }) => {
                 </View>
                 <View style={styles.chipList}>
                   {(perception.objects||[]).map(o => (
-                    <TouchableOpacity key={o} style={styles.chip} onLongPress={()=>{setEditedObjects((perception.objects||[]).join(', ')); setCorrectionMode(true);}}>
+          <TouchableOpacity key={o} style={styles.chip}>
                       <Text style={styles.chipText}>{o}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
-                {!correctionMode && (
+                {!correctionMode ? (
                   <TouchableOpacity onPress={()=>{setEditedObjects((perception.objects||[]).join(', ')); setCorrectionMode(true);}}>
                     <Text style={styles.correctionLink}>Düzelt</Text>
                   </TouchableOpacity>
+                ) : (
+                  <View style={{gap:8}}>
+                    <TextInput
+                      mode="outlined"
+                      label="Nesneleri düzenle (virgülle)"
+                      value={editedObjects}
+                      onChangeText={setEditedObjects}
+                    />
+                    <View style={{flexDirection:'row', gap:10}}>
+                      <TouchableOpacity onPress={handleApplyCorrection} style={styles.retrySmall}>
+                        <Text style={styles.retrySmallText}>Uygula</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={()=>setCorrectionMode(false)} style={[styles.retrySmall,{backgroundColor:'#eee'}]}>
+                        <Text style={[styles.retrySmallText,{color:'#333'}]}>İptal</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 )}
               </View>
             )}

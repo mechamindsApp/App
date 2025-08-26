@@ -1,12 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  ScrollView, 
-  Dimensions, 
-  TouchableOpacity, 
-  Image 
-} from 'react-native';
+import { useEffect, useState, useContext } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,11 +7,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getPopularAnalyses } from '../services/apiService';
 import { likeAnalysis } from '../services/apiService';
 import { logLike } from '../services/analyticsService';
+import { ThemeContext } from '../context/ThemeContext';
+import { lightTheme, darkTheme } from '../theme/theme';
 
-const { width } = Dimensions.get('window');
+// no-op: width not required currently
 
 const DiscoverScreen = () => {
   const insets = useSafeAreaInsets();
+  const { darkMode } = useContext(ThemeContext);
+  const theme = darkMode ? darkTheme : lightTheme;
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,7 +30,7 @@ const DiscoverScreen = () => {
 
   const categories = ['Tümü', 'Doğa', 'Restoran', 'Mimari', 'Otomobil', 'UX/UI'];
 
-  const handleOpenItem = (item) => {
+  const handleOpenItem = () => {
     // Gelecekte detay ekranına gidebilir
   };
 
@@ -45,10 +42,7 @@ const DiscoverScreen = () => {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.gradient}
-      >
+      <LinearGradient colors={theme.gradient} style={styles.gradient}>
         {/* Header */}
         <View style={[styles.header, { paddingTop: insets.top + 100 }] }>
           <Text variant="headlineSmall" style={styles.title}>

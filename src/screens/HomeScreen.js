@@ -1,12 +1,13 @@
-import React, { useContext, useState } from 'react';
-import { View, StyleSheet, Alert, Dimensions, TouchableOpacity, Platform, StatusBar, ActivityIndicator } from 'react-native';
+import { useState, useContext } from 'react';
+import { View, StyleSheet, Alert, TouchableOpacity, Platform, StatusBar, ActivityIndicator } from 'react-native';
 import { Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { takePhoto, pickImage } from '../services/photoService';
 import { ThemeContext } from '../context/ThemeContext';
+import { lightTheme, darkTheme } from '../theme/theme';
 
-const { width, height } = Dimensions.get('window');
+// Dimensions not directly needed for current layout
 
 const HomeScreen = ({ navigation }) => {
   const { darkMode } = useContext(ThemeContext);
@@ -43,10 +44,12 @@ const HomeScreen = ({ navigation }) => {
     );
   }
 
+  const theme = darkMode ? darkTheme : lightTheme;
+
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#667eea', '#764ba2']}
+        colors={theme.gradient}
         style={styles.gradient}
       >
         {/* Welcome Section */}

@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Dimensions, TouchableOpacity, ScrollView, TextInput, Platform, StatusBar } from 'react-native';
+import { useState, useEffect, useContext } from 'react';
+import { View, StyleSheet, TouchableOpacity, ScrollView, TextInput, Platform, StatusBar } from 'react-native';
 import { Avatar, Text } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { pickImage } from '../services/photoService';
 import { saveData, getData } from '../storage/storage';
+import { ThemeContext } from '../context/ThemeContext';
+import { lightTheme, darkTheme } from '../theme/theme';
 
-const { width, height } = Dimensions.get('window');
+// No direct use of width/height in styles currently
 
 const ProfileScreen = () => {
   const [profilePic, setProfilePic] = useState('https://placehold.co/100x100');
@@ -34,12 +36,12 @@ const ProfileScreen = () => {
     await saveData('profileName', text);
   };
 
+  const { darkMode } = useContext(ThemeContext);
+  const theme = darkMode ? darkTheme : lightTheme;
+
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.gradient}
-      >
+      <LinearGradient colors={theme.gradient} style={styles.gradient}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Profile Header */}
           <View style={styles.profileHeader}>

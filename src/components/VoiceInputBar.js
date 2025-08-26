@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, Text } from 'react-native';
 
 const VoiceInputBar = ({ value, onChangeText, onVoicePress }) => (
